@@ -1,7 +1,6 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
+
 import { motion } from "framer-motion";
 import { RevenueChart } from "@/components/widgets/revenue-chart";
 import { LeadsTable } from "@/components/widgets/leads-table";

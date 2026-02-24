@@ -74,7 +74,7 @@ export function SalesFunnel() {
                                         }}
                                     />
                                     <div className="absolute inset-0 flex items-center px-[0.5rem]">
-                                        <span className="text-[0.625rem] font-medium text-white/90 drop-shadow-sm">
+                                        <span className="text-[0.625rem] font-medium text-black">
                                             {Math.round((values[index] / maxValue) * 100)}%
                                         </span>
                                     </div>

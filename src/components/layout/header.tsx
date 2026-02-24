@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Settings, LogOut, User, Mail, Building2, Camera } from "lucide-react";
 import {
@@ -64,14 +65,14 @@ export function Header() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     >
-                        <img
-                            src="/logo.svg"
-                            alt="ScaleFlow"
-                            className="h-[1.75rem] w-[1.75rem] rounded-lg"
-                        />
-                        <span className="text-[0.9375rem] font-bold tracking-[-0.02em]">
-                            ScaleFlow
-                        </span>
+                        <div className="flex items-center gap-[0.375rem] select-none">
+                            <div className="flex h-[1.75rem] w-[1.75rem] items-center justify-center rounded-md bg-foreground text-background font-bold text-[1rem] shadow-sm">
+                                S
+                            </div>
+                            <span className="text-[1.25rem] font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
+                                ScaleFlow
+                            </span>
+                        </div>
                     </motion.div>
 
                     {/* Right side — user avatar with dropdown */}

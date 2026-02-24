@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Users, TrendingUp, Target, DollarSign, ArrowUp, ArrowDown } from "lucide-react";
 
@@ -57,7 +57,7 @@ export function StatsCards() {
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem]">
-            {cards.map((card, index) => (
+            {cards.map((card) => (
                 <motion.div
                     key={card.title}
                     whileHover={{ y: -2, transition: { duration: 0.2 } }}

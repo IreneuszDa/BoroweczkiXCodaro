@@ -110,6 +110,36 @@ ${dataContext}`;
             aiResponse = generateFallbackResponse(args.message, stats, metrics, topLeads, recentInteractions);
         }
 
+        // Auto-title generation if this is a new conversation
+        try {
+            const conversations = await ctx.runQuery(api.messages.listConversations, {});
+            const currentConv = conversations.find((c) => c._id === args.conversationId);
+
+            if (currentConv && currentConv.title === "Nowa rozmowa") {
+                const apiKey = process.env.GEMINI_API_KEY;
+                if (apiKey) {
+                    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+                    const genAI = new GoogleGenerativeAI(apiKey);
+                    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+                    const titlePrompt = `Write a short, professional title (max 4-5 words) summarizing this request. Use the same language as the request. Request: "${args.message}". Output ONLY the title, nothing else.`;
+                    const titleResult = await model.generateContent({
+                        contents: [{ role: "user", parts: [{ text: titlePrompt }] }]
+                    });
+
+                    const newTitle = titleResult.response.text()?.trim() ?? "Rozmowa";
+                    const cleanTitle = newTitle.replace(/^["']|["']$/g, ""); // Strip quotes if any
+
+                    await ctx.runMutation(api.messages.updateConversationTitle, {
+                        conversationId: args.conversationId,
+                        title: cleanTitle
+                    });
+                }
+            }
+        } catch (error) {
+            console.error("Failed to generate title:", error);
+        }
+
         // Save assistant response
         await ctx.runMutation(api.messages.send, {
             conversationId: args.conversationId,

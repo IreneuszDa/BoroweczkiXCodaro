@@ -87,17 +87,10 @@ export const send = mutation({
             createdAt: Date.now(),
         });
 
-        // Update conversation timestamp and auto-title from first user message
+        // Update conversation timestamp
         const conversation = await ctx.db.get(args.conversationId);
         if (conversation) {
-            const updates: { updatedAt: number; title?: string } = { updatedAt: Date.now() };
-            if (args.role === "user" && conversation.title === "Nowa rozmowa") {
-                // Auto-title: use first 40 chars of first user message
-                updates.title = args.content.length > 40
-                    ? args.content.slice(0, 40) + "…"
-                    : args.content;
-            }
-            await ctx.db.patch(args.conversationId, updates);
+            await ctx.db.patch(args.conversationId, { updatedAt: Date.now() });
         }
 
         return msgId;

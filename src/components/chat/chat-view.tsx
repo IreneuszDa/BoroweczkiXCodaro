@@ -6,10 +6,15 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageBubble } from "@/components/chat/message-bubble";
-import { Sparkles, Plus, MessageSquare, Trash2 } from "lucide-react";
+import { Sparkles, Plus, MessageSquare, Trash2, History, X } from "lucide-react";
 import { Id } from "../../../convex/_generated/dataModel";
 
-export function ChatView() {
+interface ChatViewProps {
+    isSidebarOpen: boolean;
+    setIsSidebarOpen: (open: boolean) => void;
+}
+
+export function ChatView({ isSidebarOpen, setIsSidebarOpen }: ChatViewProps) {
     const [activeConversationId, setActiveConversationId] = useState<Id<"conversations"> | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -51,6 +56,11 @@ export function ChatView() {
         }
     };
 
+    const handleSelectChat = (id: Id<"conversations">) => {
+        setActiveConversationId(id);
+        setIsSidebarOpen(false); // Close sidebar on mobile/when selected
+    };
+
     const handleSend = async (message: string, files?: File[]) => {
         setIsLoading(true);
         try {
@@ -81,49 +91,92 @@ export function ChatView() {
     const isEmpty = !messages || messages.length === 0;
 
     return (
-        <div className="flex h-[calc(100vh-7.5rem)] bg-background border border-border/40 rounded-xl overflow-hidden shadow-sm">
-            {/* Sidebar for History */}
-            <div className="w-[16rem] bg-muted/20 border-r border-border/40 flex flex-col hidden md:flex">
-                <div className="p-[1rem] flex items-center justify-between border-b border-border/40">
-                    <h2 className="text-[0.875rem] font-semibold">Chats</h2>
-                    <button
-                        onClick={handleNewChat}
-                        className="p-[0.375rem] rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+        <div className="flex h-[calc(100vh-7.5rem)] relative -mx-[clamp(1rem,3vw,3rem)] px-[clamp(1rem,3vw,3rem)]">
+
+            {/* Backdrop overlay when sidebar is open */}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setIsSidebarOpen(false)}
+                        className="absolute inset-0 bg-background/50 backdrop-blur-sm z-30"
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* Sliding Sidebar for History */}
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ x: "-100%", opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: "-100%", opacity: 0 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute left-0 top-0 bottom-0 w-[16rem] bg-background border-r border-border/40 flex flex-col z-40 shadow-xl"
                     >
-                        <Plus style={{ width: "1rem", height: "1rem" }} />
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-[0.5rem] space-y-[0.25rem]">
-                    {conversations?.map((conv) => (
-                        <button
-                            key={conv._id}
-                            onClick={() => setActiveConversationId(conv._id)}
-                            className={`w-full group flex items-center gap-[0.5rem] px-[0.75rem] py-[0.625rem] rounded-lg text-left transition-colors duration-150 ${activeConversationId === conv._id
-                                    ? "bg-accent/80 text-foreground"
-                                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                                }`}
-                        >
-                            <MessageSquare style={{ width: "1rem", height: "1rem" }} className="flex-shrink-0 opacity-60" />
-                            <span className="flex-1 truncate text-[0.8125rem] font-medium">
-                                {conv.title}
-                            </span>
-                            <button
-                                onClick={(e) => handleDeleteChat(e, conv._id)}
-                                className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all flex-shrink-0"
-                            >
-                                <Trash2 style={{ width: "0.875rem", height: "0.875rem" }} />
-                            </button>
-                        </button>
-                    ))}
-
-                    {conversations?.length === 0 && (
-                        <div className="text-center mt-[2rem] px-[1rem]">
-                            <p className="text-[0.75rem] text-muted-foreground">Brak historii czatów.</p>
+                        <div className="p-[1rem] flex items-center justify-between border-b border-border/40">
+                            <h2 className="text-[0.875rem] font-semibold flex items-center gap-[0.5rem]">
+                                <History style={{ width: "1rem", height: "1rem" }} className="text-muted-foreground" />
+                                Czat History
+                            </h2>
+                            <div className="flex items-center gap-[0.25rem]">
+                                <button
+                                    onClick={handleNewChat}
+                                    className="p-[0.375rem] rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors"
+                                >
+                                    <Plus style={{ width: "1rem", height: "1rem" }} />
+                                </button>
+                                <button
+                                    onClick={() => setIsSidebarOpen(false)}
+                                    className="p-[0.375rem] rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                                >
+                                    <X style={{ width: "1rem", height: "1rem" }} />
+                                </button>
+                            </div>
                         </div>
-                    )}
-                </div>
-            </div>
+
+                        <div className="flex-1 overflow-y-auto p-[0.5rem] space-y-[0.25rem]">
+                            {conversations?.map((conv) => (
+                                <div
+                                    key={conv._id}
+                                    onClick={() => handleSelectChat(conv._id)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            handleSelectChat(conv._id);
+                                        }
+                                    }}
+                                    className={`w-full group flex items-center gap-[0.5rem] px-[0.75rem] py-[0.625rem] rounded-lg text-left transition-colors duration-150 cursor-pointer ${activeConversationId === conv._id
+                                        ? "bg-accent/80 text-foreground"
+                                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+                                        }`}
+                                >
+                                    <MessageSquare style={{ width: "1rem", height: "1rem" }} className="flex-shrink-0 opacity-60" />
+                                    <span className="flex-1 truncate text-[0.8125rem] font-medium">
+                                        {conv.title}
+                                    </span>
+                                    <button
+                                        onClick={(e) => handleDeleteChat(e, conv._id)}
+                                        className="opacity-0 group-hover:opacity-100 hover:text-destructive transition-all flex-shrink-0 cursor-pointer focus:opacity-100"
+                                        aria-label="Delete conversation"
+                                    >
+                                        <Trash2 style={{ width: "0.875rem", height: "0.875rem" }} />
+                                    </button>
+                                </div>
+                            ))}
+
+                            {conversations?.length === 0 && (
+                                <div className="text-center mt-[2rem] px-[1rem]">
+                                    <p className="text-[0.75rem] text-muted-foreground">Brak historii czatów.</p>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col relative">
