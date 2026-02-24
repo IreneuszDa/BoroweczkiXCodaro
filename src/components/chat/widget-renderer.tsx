@@ -1,18 +1,21 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { RevenueChart } from "@/components/widgets/revenue-chart";
+import { OperationalMap } from "@/components/widgets/operational-map";
 import { LeadsTable } from "@/components/widgets/leads-table";
 import { SalesFunnel } from "@/components/widgets/sales-funnel";
-import { TaskCalendar } from "@/components/widgets/task-calendar";
 import { ActivityFeed } from "@/components/widgets/activity-feed";
+import { LogistykaLPR } from "@/components/widgets/logistyka-lpr";
+import { CommsLog } from "@/components/widgets/comms-log";
 
 const widgetMap: Record<string, React.ComponentType> = {
-    "revenue-chart": RevenueChart,
+    "operational-map": OperationalMap,
+    "revenue-chart": OperationalMap, // fallback
     "leads-table": LeadsTable,
     "sales-funnel": SalesFunnel,
-    "task-calendar": TaskCalendar,
     "activity-stats": ActivityFeed,
+    "logistics-widget": LogistykaLPR,
+    "comms-widget": CommsLog,
 };
 
 interface WidgetRendererProps {

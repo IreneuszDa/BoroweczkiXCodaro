@@ -14,9 +14,9 @@ import { History } from "lucide-react";
 export default function Home() {
   const [mode, setMode] = useState<"dashboard" | "chat">("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const customers = useQuery(api.customers.list);
+  const incidents = useQuery(api.incidents.list, {});
 
-  const needsSeed = customers !== undefined && customers.length === 0;
+  const needsSeed = incidents !== undefined && incidents.length === 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

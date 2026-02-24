@@ -66,11 +66,11 @@ export function Header() {
                         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
                     >
                         <div className="flex items-center gap-[0.375rem] select-none">
-                            <div className="flex h-[1.75rem] w-[1.75rem] items-center justify-center rounded-md bg-foreground text-background font-bold text-[1rem] shadow-sm">
-                                S
+                            <div className="flex h-[1.75rem] w-[1.75rem] items-center justify-center rounded-md bg-[#ff5c00] text-background font-bold text-[1rem] shadow-sm">
+                                M
                             </div>
                             <span className="text-[1.25rem] font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
-                                ScaleFlow
+                                MountainRescue
                             </span>
                         </div>
                     </motion.div>

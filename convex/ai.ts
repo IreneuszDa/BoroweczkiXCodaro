@@ -18,56 +18,74 @@ export const chat = action({
         });
 
         // Gather context from Convex data
-        const customers = await ctx.runQuery(api.customers.list, {});
-        const stats = await ctx.runQuery(api.customers.getStats, {});
-        const metrics = await ctx.runQuery(api.metrics.getAggregated, {});
-        const recentInteractions = await ctx.runQuery(api.interactions.listRecent, { limit: 10 });
-        const topLeads = await ctx.runQuery(api.customers.getTopLeads, { limit: 5 });
-        const revenueData = await ctx.runQuery(api.metrics.getRevenue, {});
+        const incidents = await ctx.runQuery(api.incidents.list, {});
+        const incidentStats = await ctx.runQuery(api.incidents.getStats, {});
+        const units = await ctx.runQuery(api.rescueUnits.list, {});
+        const unitStats = await ctx.runQuery(api.rescueUnits.getStats, {});
+        const weather = await ctx.runQuery(api.weather.getLatest, {});
+        const recentComms = await ctx.runQuery(api.communications.getLatest, { limit: 5 });
 
         const dataContext = `
-CURRENT CRM DATA CONTEXT:
-- Total customers: ${stats.total} (Active: ${stats.active}, Leads: ${stats.leads}, Prospects: ${stats.prospects}, Churned: ${stats.churned})
-- Average customer score: ${stats.avgScore}/100
-- Total revenue (30 days): $${metrics.totalRevenue.toLocaleString()}
-- Revenue growth: ${metrics.revenueGrowth}%
-- Total leads (30 days): ${metrics.totalLeads}
-- Total conversions: ${metrics.totalConversions}
-- Average daily tasks: ${metrics.avgTasks}
+CURRENT MOUNTAIN RESCUE DATA:
+- Total Incidents: ${incidentStats.total} (Active: ${incidentStats.active}, Critical: ${incidentStats.critical}, Resolved: ${incidentStats.resolved})
+- Rescue Units: ${unitStats.total} (Available: ${unitStats.available}, Deployed: ${unitStats.deployed})
 
-TOP 5 LEADS:
-${topLeads.map((c) => `  - ${c.name} (${c.company}) — Score: ${c.score}, Status: ${c.status}`).join("\n")}
+WEATHER TELEMETRY (Latest):
+${weather ? `- Location: ${weather.name}
+- Wind Speed: ${weather.windSpeed} km/h
+- Temperature: ${weather.temperature}°C
+- Visibility: ${weather.visibility}m
+- Avalanche Risk (1-5): ${weather.avalancheRisk}` : "No weather data available."}
 
-RECENT INTERACTIONS:
-${recentInteractions.map((i) => `  - ${i.customerName}: ${i.type} — ${i.notes}`).join("\n")}
+ACTIVE INCIDENTS:
+${incidents.filter(i => i.status === "active").map(i => {
+            // Find units assigned to this incident
+            const assigned = units.filter(u => u.assignedIncidentId === i._id);
+            const assignedStr = assigned.length > 0
+                ? `[JEDNOSTKI W DRODZE: ${assigned.map(u => u.name).join(", ")}]`
+                : `[BRAK PRZYPISANYCH JEDNOSTEK - WYMAGA DYSPONOWANIA!]`;
 
-LATEST REVENUE TREND:
-${revenueData.slice(-7).map((r) => `  ${r.date}: $${r.revenue.toLocaleString()}`).join("\n")}
+            return `  - [${i.priority.toUpperCase()}] ${i.title} (${i.type}) - ${i.description || "Brak opisu"} ${assignedStr}`;
+        }).join("\n")}
 
-ALL CUSTOMERS:
-${customers.map((c) => `  - ${c.name} | ${c.email} | ${c.company} | Status: ${c.status} | Score: ${c.score}`).join("\n")}
+RESCUE UNITS & LOGISTICS:
+${units.map(u => {
+            const assignedIncident = u.assignedIncidentId ? incidents.find(i => i._id === u.assignedIncidentId) : null;
+            const destStr = assignedIncident ? ` -> W trasie do: ${assignedIncident.title}` : ``;
+            const logStr = (u.fuelLevel !== undefined) ? ` [Paliwo: ${u.fuelLevel}%, Tlen: ${u.oxygenLevel}%, Leki: ${u.medicalSupplies}%]` : '';
+            return `  - ${u.name} (${u.type}): ${u.status.toUpperCase()}${destStr}${logStr}`;
+        }).join("\n")}
+
+RECENT RADIO LOG (Last 5 messages):
+${recentComms?.map(c => `  - [${c.unitName}]: "${c.message}"`).join("\n") || "Brak nasłuchu."}
 `;
 
-        // Determine which widgets to show
+        // Determine which widgets to show based on user query
         const widgets: string[] = [];
         const lowerMsg = args.message.toLowerCase();
-        if (lowerMsg.includes("revenue") || lowerMsg.includes("przychod") || lowerMsg.includes("pieniądz") || lowerMsg.includes("money") || lowerMsg.includes("sales")) {
-            widgets.push("revenue-chart");
+        if (lowerMsg.includes("map") || lowerMsg.includes("teren") || lowerMsg.includes("gdzie") || lowerMsg.includes("3d")) {
+            widgets.push("revenue-chart"); // Will be 3D Map Widget
         }
-        if (lowerMsg.includes("lead") || lowerMsg.includes("customer") || lowerMsg.includes("klient") || lowerMsg.includes("top")) {
-            widgets.push("leads-table");
+        if (lowerMsg.includes("incydent") || lowerMsg.includes("zgłoszen") || lowerMsg.includes("wypadek") || lowerMsg.includes("lawina")) {
+            widgets.push("leads-table"); // Will be Incidents Table
         }
-        if (lowerMsg.includes("task") || lowerMsg.includes("calendar") || lowerMsg.includes("zadani") || lowerMsg.includes("kalendarz")) {
-            widgets.push("task-calendar");
+        if (lowerMsg.includes("zespół") || lowerMsg.includes("ratownik") || lowerMsg.includes("status") || lowerMsg.includes("liczba ratowników")) {
+            widgets.push("stats-cards"); // Will be Rescue Stats
         }
-        if (lowerMsg.includes("funnel") || lowerMsg.includes("lejek") || lowerMsg.includes("pipeline") || lowerMsg.includes("sprzedaż")) {
-            widgets.push("sales-funnel");
+        if (lowerMsg.includes("pogoda") || lowerMsg.includes("wiatr") || lowerMsg.includes("temperatura") || lowerMsg.includes("warunki")) {
+            widgets.push("sales-funnel"); // Will be Weather Telemetry
         }
-        if (lowerMsg.includes("activity") || lowerMsg.includes("interaction") || lowerMsg.includes("aktywność")) {
-            widgets.push("activity-stats");
+        if (lowerMsg.includes("alert") || lowerMsg.includes("rcb") || lowerMsg.includes("turyst") || lowerMsg.includes("ostrzeżeni")) {
+            widgets.push("activity-feed"); // Will be RCB Alerts
         }
-        if (lowerMsg.includes("all") || lowerMsg.includes("dashboard") || lowerMsg.includes("overview") || lowerMsg.includes("przegląd") || lowerMsg.includes("pokaż wszystko")) {
-            widgets.push("revenue-chart", "leads-table", "sales-funnel");
+        if (lowerMsg.includes("logistyk") || lowerMsg.includes("paliwo") || lowerMsg.includes("tlen") || lowerMsg.includes("śmigłowc") || lowerMsg.includes("leki") || lowerMsg.includes("helikopter")) {
+            widgets.push("logistics-widget"); // New LPR Logistics
+        }
+        if (lowerMsg.includes("radio") || lowerMsg.includes("nasłuch") || lowerMsg.includes("komunikat") || lowerMsg.includes("meldunek")) {
+            widgets.push("comms-widget"); // New Comms Log
+        }
+        if (lowerMsg.includes("all") || lowerMsg.includes("dashboard") || lowerMsg.includes("przegląd") || lowerMsg.includes("wszystko")) {
+            widgets.push("revenue-chart", "leads-table", "stats-cards", "logistics-widget", "comms-widget");
         }
 
         // Try to call Gemini AI
@@ -82,19 +100,18 @@ ${customers.map((c) => `  - ${c.name} | ${c.email} | ${c.company} | Status: ${c.
             const genAI = new GoogleGenerativeAI(apiKey);
             const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-            const systemPrompt = `You are ScaleFlow AI Assistant — a helpful, professional, and friendly CRM assistant.
-You work inside the ScaleFlow CRM platform. You have full access to all customer, revenue, sales funnel, and activity data.
+            const systemPrompt = `You are MRI (Mountain Rescue Intelligence) AI Dispatcher — an advanced, high-stakes crisis management assistant.
+You work inside the Command & Control system for mountain rescue operations. You have full telemetry, incident logs, and weather data.
 Your job is to:
-- Answer questions about business metrics, customers, revenue, leads, and the sales pipeline
-- Provide actionable insights and advice based on the data
-- Be conversational and professional like a real business analyst
-- Use markdown formatting (bold, bullet points, headers) to make responses clear and scannable
-- Use emojis sparingly for visual clarity (📊 📈 👥 etc.)
-- Always respond in the SAME LANGUAGE the user writes in (Polish → Polish, English → English)
-- Keep responses concise but informative — max 3-4 short paragraphs
-- Reference specific data numbers from the context when relevant
+- Act as a digital dispatcher and operations coordinator.
+- Analyze incoming reports and determine life-threat levels.
+- Suggest actions, matching available units to incidents.
+- Be extremely extremely concise, professional, and military/tactical in tone. No fluff.
+- Use markdown formatting and emojis for spatial awareness (🚁 🆘 🏔️ 🌨️ ⚠️).
+- Always respond in the SAME LANGUAGE the user writes in (usually Polish).
+- Reference specific data (wind speeds, avalanche risk, helicopter availability) to make calculated decisions.
 
-Here is the live CRM data you have access to:
+Here is the live telemetry data:
 ${dataContext}`;
 
             const result = await model.generateContent({
@@ -106,8 +123,8 @@ ${dataContext}`;
             aiResponse = response.text() ?? "I couldn't generate a response. Please try again.";
         } catch (error) {
             console.error("Gemini API error:", error);
-            // Fallback: generate a smart response based on data
-            aiResponse = generateFallbackResponse(args.message, stats, metrics, topLeads, recentInteractions);
+            // Tactical fallback
+            aiResponse = `⚠️ **Błąd Połączenia z Centrale (Gemini API Error)**\n\nNiestety nie mogę nawiązać połączenia z serwerem analitycznym. Poniżej znajduje się zrzut bezpośrednich danych telemetrycznych:\n\n- Aktywne zgłoszenia: **${incidentStats.active}** (Krytyczne: ${incidentStats.critical})\n- Zespoły w akcji: **${unitStats.deployed}**\n- Zespoły gotowe w bazie: **${unitStats.available}**\n\nPrzejdź na sterowanie ręczne.`;
         }
 
         // Auto-title generation if this is a new conversation
@@ -122,13 +139,13 @@ ${dataContext}`;
                     const genAI = new GoogleGenerativeAI(apiKey);
                     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-                    const titlePrompt = `Write a short, professional title (max 4-5 words) summarizing this request. Use the same language as the request. Request: "${args.message}". Output ONLY the title, nothing else.`;
+                    const titlePrompt = `Write a very brief, tactical title (max 3-4 words) for this mountain rescue log based on the user request. Output ONLY the title. Request: "${args.message}"`;
                     const titleResult = await model.generateContent({
                         contents: [{ role: "user", parts: [{ text: titlePrompt }] }]
                     });
 
-                    const newTitle = titleResult.response.text()?.trim() ?? "Rozmowa";
-                    const cleanTitle = newTitle.replace(/^["']|["']$/g, ""); // Strip quotes if any
+                    const newTitle = titleResult.response.text()?.trim() ?? "Log Operacyjny";
+                    const cleanTitle = newTitle.replace(/^["']|["']$/g, "");
 
                     await ctx.runMutation(api.messages.updateConversationTitle, {
                         conversationId: args.conversationId,
@@ -151,31 +168,3 @@ ${dataContext}`;
         return { content: aiResponse, widgets };
     },
 });
-
-function generateFallbackResponse(
-    message: string,
-    stats: { total: number; active: number; leads: number; prospects: number; churned: number; avgScore: number },
-    metrics: { totalRevenue: number; totalLeads: number; totalConversions: number; revenueGrowth: number; avgTasks: number; avgActiveCases: number },
-    topLeads: { name: string; company: string; score: number; status: string }[],
-    recentInteractions: { customerName: string; type: string; notes: string }[]
-) {
-    const lower = message.toLowerCase();
-
-    if (lower.includes("revenue") || lower.includes("przychod")) {
-        return `📊 **Revenue Overview (Last 30 Days)**\n\nTotal revenue: **$${metrics.totalRevenue.toLocaleString()}**\nGrowth trend: **${metrics.revenueGrowth > 0 ? "+" : ""}${metrics.revenueGrowth}%**\n\nThe revenue shows a ${metrics.revenueGrowth > 0 ? "positive" : "declining"} trend over the period. ${metrics.revenueGrowth > 5 ? "Great momentum!" : "Consider reviewing sales strategy."}`;
-    }
-
-    if (lower.includes("lead") || lower.includes("customer") || lower.includes("klient")) {
-        return `👥 **Customer Overview**\n\n- Total: **${stats.total}** customers\n- Active: **${stats.active}** | Leads: **${stats.leads}** | Prospects: **${stats.prospects}** | Churned: **${stats.churned}**\n- Average Score: **${stats.avgScore}/100**\n\n**Top Leads:**\n${topLeads.map((l, i) => `${i + 1}. **${l.name}** (${l.company}) — Score: ${l.score}`).join("\n")}`;
-    }
-
-    if (lower.includes("activity") || lower.includes("interaction") || lower.includes("aktywność")) {
-        return `📋 **Recent Activity**\n\n${recentInteractions.slice(0, 5).map((i) => `• **${i.customerName}** — ${i.type}: ${i.notes}`).join("\n")}`;
-    }
-
-    if (lower.includes("help") || lower.includes("pomoc") || lower.includes("what can") || lower.includes("co potrafisz")) {
-        return `🤖 **Jestem ScaleFlow AI Assistant!**\n\nMogę pomóc z:\n- 📊 **Analiza przychodów** — pytaj o revenue, trendy, wzrost\n- 👥 **Klienci i leady** — wyświetl leady, oceny, statusy\n- 📋 **Aktywność** — ostatnie interakcje\n- 📈 **Lejek sprzedaży** — pipeline i konwersje\n- 📅 **Zadania** — kalendarz i podsumowania\n\nPo prostu zapytaj np. *"Pokaż mi trendy przychodów"* lub *"Kim są moi najlepsi klienci?"*`;
-    }
-
-    return `📊 **ScaleFlow Dashboard Summary**\n\n- **${stats.total}** total customers (${stats.active} active)\n- **$${metrics.totalRevenue.toLocaleString()}** revenue (30 days)\n- **${metrics.revenueGrowth > 0 ? "+" : ""}${metrics.revenueGrowth}%** growth\n- **${metrics.totalLeads}** new leads\n- **${metrics.totalConversions}** conversions\n\nAsk me about specific metrics for detailed insights!`;
-}

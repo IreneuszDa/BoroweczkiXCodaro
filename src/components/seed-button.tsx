@@ -35,7 +35,7 @@ export function SeedButton() {
                 className="gap-[0.5rem] text-[0.8125rem]"
             >
                 <Database style={{ width: "0.875rem", height: "0.875rem" }} />
-                {loading ? "Seeding data..." : "Initialize Demo Data"}
+                {loading ? "Inicjalizacja systemu..." : "Zainicjuj System Ratunkowy"}
             </Button>
         </motion.div>
     );

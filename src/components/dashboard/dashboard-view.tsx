@@ -2,12 +2,14 @@
 
 
 import { motion } from "framer-motion";
-import { RevenueChart } from "@/components/widgets/revenue-chart";
+import { OperationalMap } from "@/components/widgets/operational-map";
 import { LeadsTable } from "@/components/widgets/leads-table";
 import { SalesFunnel } from "@/components/widgets/sales-funnel";
 import { StatsCards } from "@/components/widgets/stats-cards";
 import { ActivityFeed } from "@/components/widgets/activity-feed";
-import { TaskCalendar } from "@/components/widgets/task-calendar";
+
+import { LogistykaLPR } from "@/components/widgets/logistyka-lpr";
+import { CommsLog } from "@/components/widgets/comms-log";
 
 const stagger = {
     hidden: { opacity: 0 },
@@ -31,7 +33,7 @@ const item = {
 export function DashboardView() {
     return (
         <motion.div
-            className="py-[1.5rem] space-y-[1.25rem]"
+            className="py-[1.5rem] space-y-[1.25rem] pb-24"
             variants={stagger}
             initial="hidden"
             animate="show"
@@ -41,24 +43,25 @@ export function DashboardView() {
                 <StatsCards />
             </motion.div>
 
-            {/* Revenue + Funnel Row */}
+            {/* Map + Telemetry Row */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-[1.25rem]">
                 <motion.div variants={item} className="lg:col-span-3">
-                    <RevenueChart />
+                    <OperationalMap />
                 </motion.div>
-                <motion.div variants={item} className="lg:col-span-2">
+                <motion.div variants={item} className="lg:col-span-2 flex flex-col gap-[1.25rem]">
                     <SalesFunnel />
+                    <LogistykaLPR />
                 </motion.div>
             </div>
 
-            {/* Leads + Calendar + Activity Row */}
+            {/* Incidents + Comms + Alerts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1.25rem]">
                 <motion.div variants={item} className="lg:col-span-2">
                     <LeadsTable />
                 </motion.div>
                 <motion.div variants={item} className="space-y-[1.25rem]">
-                    <TaskCalendar />
                     <ActivityFeed />
+                    <CommsLog />
                 </motion.div>
             </div>
         </motion.div>

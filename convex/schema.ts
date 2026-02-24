@@ -2,50 +2,82 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  customers: defineTable({
-    name: v.string(),
-    email: v.string(),
-    company: v.string(),
-    status: v.union(
-      v.literal("lead"),
-      v.literal("prospect"),
-      v.literal("active"),
-      v.literal("churned")
+  incidents: defineTable({
+    title: v.string(),
+    type: v.union(
+      v.literal("lost"),
+      v.literal("injury"),
+      v.literal("avalanche"),
+      v.literal("other")
     ),
-    score: v.number(),
-    phone: v.optional(v.string()),
-    notes: v.optional(v.string()),
+    priority: v.union(
+      v.literal("low"),
+      v.literal("medium"),
+      v.literal("high"),
+      v.literal("critical")
+    ),
+    status: v.union(
+      v.literal("active"),
+      v.literal("resolved"),
+      v.literal("false_alarm")
+    ),
+    location: v.object({
+      lat: v.number(),
+      lng: v.number(),
+      alt: v.number()
+    }),
+    description: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_status", ["status"])
-    .index("by_score", ["score"])
+    .index("by_priority", ["priority"])
     .index("by_createdAt", ["createdAt"]),
 
-  interactions: defineTable({
-    customerId: v.id("customers"),
+  rescueUnits: defineTable({
+    name: v.string(),
     type: v.union(
-      v.literal("call"),
-      v.literal("email"),
-      v.literal("meeting"),
-      v.literal("chat"),
-      v.literal("note")
+      v.literal("helicopter"),
+      v.literal("quad"),
+      v.literal("foot_patrol"),
+      v.literal("dog_unit")
     ),
-    notes: v.string(),
-    sentiment: v.optional(
-      v.union(v.literal("positive"), v.literal("neutral"), v.literal("negative"))
+    status: v.union(
+      v.literal("at_base"),
+      v.literal("in_action"),
+      v.literal("unavailable")
     ),
+    location: v.object({
+      lat: v.number(),
+      lng: v.number(),
+      alt: v.number()
+    }),
+    personnelCount: v.number(),
+    assignedIncidentId: v.optional(v.id("incidents")),
+    fuelLevel: v.optional(v.number()), // 0-100
+    oxygenLevel: v.optional(v.number()), // 0-100
+    medicalSupplies: v.optional(v.number()), // 0-100
     createdAt: v.number(),
-  }).index("by_customer", ["customerId"])
+  }).index("by_status", ["status"])
     .index("by_type", ["type"])
-    .index("by_createdAt", ["createdAt"]),
+    .index("by_incident", ["assignedIncidentId"]),
 
-  metrics: defineTable({
-    date: v.string(),
-    revenue: v.number(),
-    leads: v.number(),
-    conversions: v.number(),
-    tasks: v.number(),
-    activeCases: v.number(),
-  }).index("by_date", ["date"]),
+  communications: defineTable({
+    unitId: v.optional(v.id("rescueUnits")),
+    unitName: v.string(), // Fallback or explicit name
+    message: v.string(),
+    channel: v.union(v.literal("CH_1_EMERGENCY"), v.literal("CH_2_LOGISTICS"), v.literal("CH_3_AIR_TO_GROUND")),
+    timestamp: v.number(),
+  }).index("by_timestamp", ["timestamp"])
+    .index("by_unit", ["unitId"]),
+
+  weatherStations: defineTable({
+    name: v.string(),
+    location: v.object({ lat: v.number(), lng: v.number(), alt: v.number() }),
+    windSpeed: v.number(),
+    temperature: v.number(),
+    visibility: v.number(),
+    avalancheRisk: v.number(), // 1-5
+    timestamp: v.number(),
+  }).index("by_timestamp", ["timestamp"]),
 
   conversations: defineTable({
     title: v.string(),

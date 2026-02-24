@@ -9,11 +9,12 @@
  */
 
 import type * as ai from "../ai.js";
-import type * as customers from "../customers.js";
-import type * as interactions from "../interactions.js";
+import type * as communications from "../communications.js";
+import type * as incidents from "../incidents.js";
 import type * as messages from "../messages.js";
-import type * as metrics from "../metrics.js";
+import type * as rescueUnits from "../rescueUnits.js";
 import type * as seed from "../seed.js";
+import type * as weather from "../weather.js";
 
 import type {
   ApiFromModules,
@@ -23,11 +24,12 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ai: typeof ai;
-  customers: typeof customers;
-  interactions: typeof interactions;
+  communications: typeof communications;
+  incidents: typeof incidents;
   messages: typeof messages;
-  metrics: typeof metrics;
+  rescueUnits: typeof rescueUnits;
   seed: typeof seed;
+  weather: typeof weather;
 }>;
 
 /**
