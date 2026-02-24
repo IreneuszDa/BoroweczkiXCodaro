@@ -19,7 +19,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <div className="flex justify-center pt-1">
+      <div className="flex justify-center pt-[1rem] pb-[0.5rem]">
         <ModeSwitcher mode={mode} onModeChange={setMode} />
       </div>
 

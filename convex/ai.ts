@@ -6,11 +6,13 @@ import { api } from "./_generated/api";
 
 export const chat = action({
     args: {
+        conversationId: v.id("conversations"),
         message: v.string(),
     },
     handler: async (ctx, args) => {
         // Save user message
         await ctx.runMutation(api.messages.send, {
+            conversationId: args.conversationId,
             role: "user",
             content: args.message,
         });
@@ -73,38 +75,44 @@ ${customers.map((c) => `  - ${c.name} | ${c.email} | ${c.company} | Status: ${c.
         try {
             const apiKey = process.env.GEMINI_API_KEY;
             if (!apiKey) {
-                throw new Error("No API key");
+                throw new Error("No GEMINI_API_KEY configured");
             }
 
-            const { GoogleGenAI } = await import("@google/genai");
-            const ai = new GoogleGenAI({ apiKey });
+            const { GoogleGenerativeAI } = await import("@google/generative-ai");
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-            const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash",
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            {
-                                text: `You are an intelligent CRM assistant. You have access to the following data about the business. Answer questions concisely and professionally. Use data from the context. Always answer in the same language the user uses.
+            const systemPrompt = `You are ScaleFlow AI Assistant — a helpful, professional, and friendly CRM assistant.
+You work inside the ScaleFlow CRM platform. You have full access to all customer, revenue, sales funnel, and activity data.
+Your job is to:
+- Answer questions about business metrics, customers, revenue, leads, and the sales pipeline
+- Provide actionable insights and advice based on the data
+- Be conversational and professional like a real business analyst
+- Use markdown formatting (bold, bullet points, headers) to make responses clear and scannable
+- Use emojis sparingly for visual clarity (📊 📈 👥 etc.)
+- Always respond in the SAME LANGUAGE the user writes in (Polish → Polish, English → English)
+- Keep responses concise but informative — max 3-4 short paragraphs
+- Reference specific data numbers from the context when relevant
 
-${dataContext}
+Here is the live CRM data you have access to:
+${dataContext}`;
 
-User question: ${args.message}`,
-                            },
-                        ],
-                    },
-                ],
+            const result = await model.generateContent({
+                contents: [{ role: "user", parts: [{ text: args.message }] }],
+                systemInstruction: { role: "system", parts: [{ text: systemPrompt }] },
             });
 
-            aiResponse = response.text ?? "I couldn't generate a response. Please try again.";
-        } catch {
+            const response = result.response;
+            aiResponse = response.text() ?? "I couldn't generate a response. Please try again.";
+        } catch (error) {
+            console.error("Gemini API error:", error);
             // Fallback: generate a smart response based on data
             aiResponse = generateFallbackResponse(args.message, stats, metrics, topLeads, recentInteractions);
         }
 
         // Save assistant response
         await ctx.runMutation(api.messages.send, {
+            conversationId: args.conversationId,
             role: "assistant",
             content: aiResponse,
             widgets: widgets.length > 0 ? widgets : undefined,
@@ -135,9 +143,9 @@ function generateFallbackResponse(
         return `📋 **Recent Activity**\n\n${recentInteractions.slice(0, 5).map((i) => `• **${i.customerName}** — ${i.type}: ${i.notes}`).join("\n")}`;
     }
 
-    if (lower.includes("help") || lower.includes("pomoc") || lower.includes("what can")) {
-        return `🤖 **I'm your CRM Assistant!**\n\nI can help you with:\n- 📊 **Revenue analysis** — Ask about revenue, trends, and growth\n- 👥 **Customer insights** — View leads, scores, and statuses\n- 📋 **Activity tracking** — See recent interactions\n- 📈 **Sales funnel** — Pipeline and conversion data\n- 📅 **Task overview** — Calendar and daily tasks\n\nTry asking: *"Show me revenue trends"* or *"Who are my top leads?"*`;
+    if (lower.includes("help") || lower.includes("pomoc") || lower.includes("what can") || lower.includes("co potrafisz")) {
+        return `🤖 **Jestem ScaleFlow AI Assistant!**\n\nMogę pomóc z:\n- 📊 **Analiza przychodów** — pytaj o revenue, trendy, wzrost\n- 👥 **Klienci i leady** — wyświetl leady, oceny, statusy\n- 📋 **Aktywność** — ostatnie interakcje\n- 📈 **Lejek sprzedaży** — pipeline i konwersje\n- 📅 **Zadania** — kalendarz i podsumowania\n\nPo prostu zapytaj np. *"Pokaż mi trendy przychodów"* lub *"Kim są moi najlepsi klienci?"*`;
     }
 
-    return `📊 **CRM Dashboard Summary**\n\n- **${stats.total}** total customers (${stats.active} active)\n- **$${metrics.totalRevenue.toLocaleString()}** revenue (30 days)\n- **${metrics.revenueGrowth > 0 ? "+" : ""}${metrics.revenueGrowth}%** growth\n- **${metrics.totalLeads}** new leads\n- **${metrics.totalConversions}** conversions\n\nAsk me about specific metrics for detailed insights!`;
+    return `📊 **ScaleFlow Dashboard Summary**\n\n- **${stats.total}** total customers (${stats.active} active)\n- **$${metrics.totalRevenue.toLocaleString()}** revenue (30 days)\n- **${metrics.revenueGrowth > 0 ? "+" : ""}${metrics.revenueGrowth}%** growth\n- **${metrics.totalLeads}** new leads\n- **${metrics.totalConversions}** conversions\n\nAsk me about specific metrics for detailed insights!`;
 }

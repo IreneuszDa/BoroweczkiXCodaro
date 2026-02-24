@@ -48,7 +48,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
     return (
         <motion.div
-            className={`flex gap-[0.625rem] ${isUser ? "flex-row-reverse" : ""}`}
+            className={`flex gap-[0.75rem] ${isUser ? "flex-row-reverse" : ""}`}
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{
@@ -58,15 +58,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         >
             {/* Avatar */}
             <div
-                className={`flex-shrink-0 w-[1.75rem] h-[1.75rem] rounded-full flex items-center justify-center ${isUser
-                        ? "bg-primary/10 text-primary"
-                        : "bg-gradient-to-br from-primary/20 to-primary/10 text-primary"
+                className={`flex-shrink-0 w-[2.25rem] h-[2.25rem] rounded-full flex items-center justify-center ${isUser
+                    ? "bg-primary/10 text-primary"
+                    : "bg-gradient-to-br from-primary/20 to-primary/10 text-primary"
                     }`}
             >
                 {isUser ? (
-                    <User style={{ width: "0.875rem", height: "0.875rem" }} />
+                    <User style={{ width: "1rem", height: "1rem" }} />
                 ) : (
-                    <Bot style={{ width: "0.875rem", height: "0.875rem" }} />
+                    <Bot style={{ width: "1rem", height: "1rem" }} />
                 )}
             </div>
 
@@ -76,9 +76,9 @@ export function MessageBubble({ message }: MessageBubbleProps) {
                     }`}
             >
                 <div
-                    className={`rounded-2xl px-[0.875rem] py-[0.625rem] text-[0.8125rem] leading-relaxed ${isUser
-                            ? "bg-primary text-primary-foreground rounded-tr-[0.25rem]"
-                            : "bg-secondary/80 text-foreground rounded-tl-[0.25rem] border border-border/30"
+                    className={`rounded-2xl px-[1.125rem] py-[0.875rem] text-[0.9375rem] leading-relaxed ${isUser
+                        ? "bg-primary text-primary-foreground rounded-tr-[0.25rem]"
+                        : "bg-secondary/80 text-foreground rounded-tl-[0.25rem] border border-border/30"
                         }`}
                 >
                     <div className="chat-markdown">{formatMarkdown(message.content)}</div>
@@ -100,7 +100,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
 
                 {/* Timestamp */}
                 <p
-                    className={`text-[0.5625rem] text-muted-foreground/60 mt-[0.25rem] ${isUser ? "text-right" : ""
+                    className={`text-[0.6875rem] text-muted-foreground/60 mt-[0.375rem] ${isUser ? "text-right" : ""
                         }`}
                 >
                     {new Date(message.createdAt).toLocaleTimeString([], {

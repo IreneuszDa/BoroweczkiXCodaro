@@ -47,10 +47,18 @@ export default defineSchema({
     activeCases: v.number(),
   }).index("by_date", ["date"]),
 
+  conversations: defineTable({
+    title: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_updatedAt", ["updatedAt"]),
+
   messages: defineTable({
+    conversationId: v.optional(v.id("conversations")),
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     widgets: v.optional(v.array(v.string())),
     createdAt: v.number(),
-  }).index("by_createdAt", ["createdAt"]),
+  }).index("by_conversation", ["conversationId", "createdAt"])
+    .index("by_createdAt", ["createdAt"]),
 });
